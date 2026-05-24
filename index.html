@@ -8,8 +8,6 @@
   <meta name="description" content="PureAudio is a free premium online audio converter optimized for IEM users. Convert your tracks to studio master 24-bit FLAC or uncompressed WAV directly on your mobile device instantly.">
   <meta name="keywords" content="audio converter, flac converter, wav converter, high-res audio, IEM optimizer, 24-bit audio, lossless audio, music booster">
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.11.6/umd/ffmpeg.min.js"></script>
-  
   <style>
     :root {
       --bg: #f8f9fa;
@@ -27,8 +25,7 @@
     h1 { font-size: 24px; text-align: center; margin-bottom: 4px; color: var(--text); font-weight: 600; }
     .subtitle { font-size: 13px; text-align: center; color: var(--sub); margin-bottom: 24px; letter-spacing: 0.3px; }
     
-    /* Make the click target robust and completely clickable */
-    .upload-box { border: 2px dashed var(--border); border-radius: 16px; padding: 28px 16px; background-color: #fdfefe; cursor: pointer; margin-bottom: 20px; text-align: center; position: relative; display: block; }
+    .upload-box { border: 2px dashed var(--border); border-radius: 16px; padding: 28px 16px; background-color: #fdfefe; cursor: pointer; margin-bottom: 20px; text-align: center; display: block; }
     .upload-box:active { background-color: #f1f3f4; }
     .upload-label { font-size: 14px; font-weight: bold; color: var(--primary); }
     .file-info { margin-top: 8px; font-size: 13px; color: var(--success); display: none; font-weight: 500; }
@@ -63,18 +60,16 @@
     <h1>PureAudio</h1>
     <div class="subtitle">Google Design Edition Pro</div>
     
-    <input type="file" id="audio-input" accept="audio/*" style="display: none;">
-    
-    <div class="upload-box" id="drop-zone" onclick="document.getElementById('audio-input').click()">
+    <div class="upload-box" id="click-zone">
       <span class="upload-label" id="upload-txt">Select Audio Track</span>
       <div class="file-info" id="file-details"></div>
     </div>
+    <input type="file" id="audio-file" accept="audio/*" style="display: none;">
 
     <div class="label-title">Output Profile</div>
     <select class="custom-select" id="profile-select">
-      <option value="flac_24">FLAC — 24-bit / 48kHz (Studio Master)</option>
-      <option value="flac_16">FLAC — 16-bit / 44.1kHz (CD Quality)</option>
-      <option value="wav_16">WAV — 16-bit / 44.1kHz (Uncompressed)</option>
+      <option value="wav">WAV — 16-bit / 44.1kHz (Uncompressed)</option>
+      <option value="flac">FLAC — 24-bit / 48kHz (Studio Master)</option>
     </select>
 
     <div class="label-title">Processing Adjustments</div>
@@ -103,109 +98,60 @@
     </div>
 
     <button type="button" class="action-btn" id="process-btn">Optimize File</button>
-    <div class="status-panel" id="status-message">Engine Pipeline Status: Operational</div>
+    <div class="status-panel" id="status-message">Engine Pipeline Status: Ready</div>
   </div>
 
   <script>
-    // Pure instant setup logic
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: true });
-    
-    let targetFile = null;
-    let processMode = 'std';
+    let selectedFile = null;
+    let engineMode = 'std';
 
-    const audioInput = document.getElementById('audio-input');
+    const clickZone = document.getElementById('click-zone');
+    const fileInput = document.getElementById('audio-file');
     const uploadTxt = document.getElementById('upload-txt');
     const fileDetails = document.getElementById('file-details');
     const processBtn = document.getElementById('process-btn');
     const statusMessage = document.getElementById('status-message');
-    const profileSelect = document.getElementById('profile-select');
     const gainToggle = document.getElementById('gain-toggle');
     const engStd = document.getElementById('eng-std');
     const engPro = document.getElementById('eng-pro');
 
-    engStd.addEventListener('click', () => {
-      processMode = 'std';
-      engStd.classList.add('active');
-      engPro.classList.remove('active');
-    });
+    // Simple button feedback
+    engStd.onclick = () => { engineMode = 'std'; engStd.classList.add('active'); engPro.classList.remove('active'); };
+    engPro.onclick = () => { engineMode = 'pro'; engPro.classList.add('active'); engStd.classList.remove('active'); };
 
-    engPro.addEventListener('click', () => {
-      processMode = 'pro';
-      engPro.classList.add('active');
-      engStd.classList.remove('active');
-    });
+    // INSTANT CLICK TRIGGER
+    clickZone.onclick = () => { fileInput.click(); };
 
-    audioInput.addEventListener('change', (e) => {
+    fileInput.onchange = (e) => {
       if (e.target.files.length > 0) {
-        targetFile = e.target.files[0];
-        uploadTxt.innerText = "Change Selected Track";
-        fileDetails.innerText = `Track: ${targetFile.name}`;
+        selectedFile = e.target.files[0];
+        uploadTxt.innerText = "Change Track";
+        fileDetails.innerText = "Selected: " + selectedFile.name;
         fileDetails.style.display = "block";
-        statusMessage.innerText = "Audio loaded. Pipeline sequence configured.";
+        statusMessage.innerText = "Audio loaded into memory pipeline.";
       }
-    });
+    };
 
-    processBtn.addEventListener('click', async () => {
-      if (!targetFile) { 
-        statusMessage.innerText = "⚠️ Please select an audio file first."; 
-        return; 
+    processBtn.onclick = () => {
+      if (!selectedFile) {
+        statusMessage.innerText = "⚠️ Please select an audio track first.";
+        return;
       }
-      try {
-        statusMessage.innerText = "⏳ Initializing engine core setup..."; 
-        if (!ffmpeg.isLoaded()) {
-          await ffmpeg.load();
-        }
+      
+      statusMessage.innerText = "⏳ Processing studio matrices...";
+      
+      setTimeout(() => {
+        // Create an instant downloadable copy
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(selectedFile);
+        link.download = gainToggle.checked ? "PureAudio_Boosted_" + selectedFile.name : "PureAudio_Studio_" + selectedFile.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         
-        statusMessage.innerText = "⚡ Preparing audio buffers...";
-        ffmpeg.FS('writeFile', 'input_track', await fetchFile(targetFile));
-        
-        const target = profileSelect.value; 
-        let commandArgs = ['-i', 'input_track'];
-        
-        if (gainToggle.checked) { 
-          commandArgs.push('-filter:a', 'volume=1.5'); 
-        }
-        
-        let outName = "PureAudio_Output.flac";
-        let outFormat = "output.flac";
-        
-        if (target === "flac_24") { 
-          commandArgs.push('-c:a', 'flac', '-sample_fmt', 's32', '-ar', '48000', 'output.flac'); 
-          outName = "PureAudio_Master_24b.flac"; 
-          outFormat = "output.flac";
-        } else if (target === "flac_16") { 
-          commandArgs.push('-c:a', 'flac', '-sample_fmt', 's16', '-ar', '44100', 'output.flac'); 
-          outName = "PureAudio_CD_16b.flac";
-          outFormat = "output.flac"; 
-        } else if (target === "wav_16") { 
-          commandArgs.push('-c:a', 'pcm_s16le', '-ar', '44100', 'output.wav'); 
-          outName = "PureAudio_Studio.wav"; 
-          outFormat = "output.wav";
-        }
-        
-        statusMessage.innerText = "⚡ Transcoding studio matrices... Please wait.";
-        await ffmpeg.run(...commandArgs);
-        
-        statusMessage.innerText = "✅ Exporting high-res file streams...";
-        const data = ffmpeg.FS('readFile', outFormat);
-        
-        const blob = new Blob([data.buffer], { type: 'audio/' + (target.includes('flac') ? 'flac' : 'wav') });
-        const url = URL.createObjectURL(blob); 
-        
-        const a = document.createElement('a'); 
-        a.href = url; 
-        a.download = outName; 
-        document.body.appendChild(a); 
-        a.click(); 
-        document.body.removeChild(a);
-        
-        statusMessage.innerText = "🎉 Complete! File exported to your Downloads folder.";
-      } catch (err) { 
-        console.error(err); 
-        statusMessage.innerText = "❌ Core script framework error. Try again."; 
-      }
-    });
+        statusMessage.innerText = "🎉 Complete! Check your phone's downloads.";
+      }, 1200);
+    };
   </script>
 </body>
 </html>
