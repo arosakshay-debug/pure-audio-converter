@@ -1,315 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PureAudio Pro - Premium Studio Optimizer</title>
+  
+  <meta name="description" content="PureAudio is a free premium online audio converter optimized for IEM users. Convert your tracks to studio master 24-bit FLAC or uncompressed WAV directly on your mobile device instantly.">
+  <meta name="keywords" content="audio converter, flac converter, wav converter, high-res audio, IEM optimizer, 24-bit audio, lossless audio, music booster">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.11.6/umd/ffmpeg.min.js"></script>
+  
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --primary: #1a73e8;
+      --primary-light: #e8f0fe;
+      --text: #202124;
+      --sub: #5f6368;
+      --border: #dadce0;
+      --success: #1e8e3e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
+    .container { background-color: var(--card); width: 100%; max-width: 440px; border-radius: 28px; padding: 32px 24px; border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    h1 { font-size: 24px; text-align: center; margin-bottom: 4px; color: var(--text); font-weight: 600; }
+    .subtitle { font-size: 13px; text-align: center; color: var(--sub); margin-bottom: 24px; letter-spacing: 0.3px; }
     
-    <!-- ========================================== -->
-    <!--          SEO & KEYWORD OPTIMIZATION        -->
-    <!-- ========================================== -->
-    <title>AuraAudio | Premium Online IEM Audio Optimizer & Hi-Res Converter</title>
-    <meta name="description" content="Convert low-quality MP3s into high-fidelity audio optimized specifically for IEMs. Match the Harman Target, simulate binaural crossfeed, and upscale to 32-bit/96kHz instantly online.">
-    <meta name="keywords" content="IEM audio optimizer online, best EQ settings for IEMs, Harman Target curve converter, audiophile audio upsampler, in-ear monitor sound enhancer, fix IEM treble piercing online, binaural crossfeed simulator, convert MP3 to high resolution audio, low quality to hi-res audio converter, online audio upscaler 32bit 96kHz, restore lost high frequencies in MP3, Moondrop, Tangzu, 7Hz optimization">
-    <meta name="robots" content="index, follow">
+    /* Make the click target robust and completely clickable */
+    .upload-box { border: 2px dashed var(--border); border-radius: 16px; padding: 28px 16px; background-color: #fdfefe; cursor: pointer; margin-bottom: 20px; text-align: center; position: relative; display: block; }
+    .upload-box:active { background-color: #f1f3f4; }
+    .upload-label { font-size: 14px; font-weight: bold; color: var(--primary); }
+    .file-info { margin-top: 8px; font-size: 13px; color: var(--success); display: none; font-weight: 500; }
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="AuraAudio | Premium Online IEM Audio Optimizer">
-    <meta property="og:description" content="Upscale audio quality and match elite audiophile target sound signatures perfectly tuned for your In-Ear Monitors.">
+    .label-title { font-size: 12px; font-weight: bold; color: var(--sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .custom-select { width: 100%; padding: 14px; font-size: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; outline: none; background-color: #fff; color: var(--text); }
     
-    <!-- Tailwind CSS & Google Fonts -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    .extra-options-group { background-color: #f1f3f4; padding: 16px; border-radius: 16px; margin-bottom: 24px; }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .toggle-row:last-child { margin-bottom: 0; }
+    .toggle-text h4 { font-size: 14px; color: var(--text); font-weight: 600; }
+    .toggle-text p { font-size: 11px; color: var(--sub); }
+    
+    .segmented-control { display: flex; background: #e3e6e8; padding: 2px; border-radius: 8px; }
+    .segment-btn { border: none; background: transparent; padding: 6px 12px; font-size: 12px; font-weight: bold; color: var(--sub); cursor: pointer; border-radius: 6px; outline: none; }
+    .segment-btn.active { background: var(--card); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+    
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #b0b5b9; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .action-btn { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 15px; font-size: 15px; font-weight: bold; border-radius: 100px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .action-btn:active { background-color: #1557b0; }
+    .status-panel { margin-top: 20px; padding: 12px; border-radius: 12px; background-color: #e8f0fe; font-size: 13px; color: var(--primary); text-align: center; font-weight: 500; }
+  </style>
 </head>
-<body class="bg-[#f8fafc] text-[#0f172a] min-h-screen flex flex-col justify-between">
+<body>
+  <div class="container">
+    <h1>PureAudio</h1>
+    <div class="subtitle">Google Design Edition Pro</div>
+    
+    <input type="file" id="audio-input" accept="audio/*" style="display: none;">
+    
+    <div class="upload-box" id="drop-zone" onclick="document.getElementById('audio-input').click()">
+      <span class="upload-label" id="upload-txt">Select Audio Track</span>
+      <div class="file-info" id="file-details"></div>
+    </div>
 
-    <!-- Header Navigation -->
-    <header class="border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-xs">
-        <div class="flex items-center space-x-3">
-            <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20">
-                <span class="font-bold text-white text-sm">Ω</span>
-            </div>
-            <span class="text-xl font-semibold tracking-tight text-gray-900">AuraAudio <span class="text-xs font-bold text-blue-600 uppercase tracking-widest ml-1">Pro</span></span>
+    <div class="label-title">Output Profile</div>
+    <select class="custom-select" id="profile-select">
+      <option value="flac_24">FLAC — 24-bit / 48kHz (Studio Master)</option>
+      <option value="flac_16">FLAC — 16-bit / 44.1kHz (CD Quality)</option>
+      <option value="wav_16">WAV — 16-bit / 44.1kHz (Uncompressed)</option>
+    </select>
+
+    <div class="label-title">Processing Adjustments</div>
+    <div class="extra-options-group">
+      <div class="toggle-row">
+        <div class="toggle-text">
+          <h4>Conversion Engine</h4>
+          <p>Optimize algorithmic filter depth</p>
         </div>
-        <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-600">
-            <a href="#studio" class="hover:text-blue-600 transition">DSP Studio</a>
-            <a href="#database" class="hover:text-blue-600 transition">IEM Database</a>
-            <span class="px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-200 text-xs font-semibold">99.4% Audio Success Rate</span>
-        </nav>
-    </header>
-
-    <!-- Hero SEO Banner Section -->
-    <section class="max-w-5xl w-full mx-auto px-6 pt-12 text-center md:text-left">
-        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-3">
-            The Ultimate Online <span class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Audio Upscaler</span> for IEM Users
-        </h1>
-        <p class="text-gray-600 max-w-2xl text-sm md:text-base leading-relaxed font-medium">
-            Eliminate compressed listening fatigue. Optimize your digital sound signature to the 
-            <strong class="text-gray-900 font-semibold">Harman Target Curve</strong>, restore lost high frequencies, and experience true 32-bit / 96kHz acoustic precision built entirely for audiophile In-Ear Monitors.
-        </p>
-    </section>
-
-    <!-- Main Workspace (Studio Area) -->
-    <main id="studio" class="flex-1 max-w-5xl w-full mx-auto p-6 grid md:grid-cols-3 gap-8 items-start">
-        
-        <!-- Left Column: Upload & Core Audio Stats -->
-        <div class="md:col-span-1 space-y-6">
-            <!-- 1. Low Quality Source Selection (BULLETPROOF NATIVE VERSION) -->
-            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">1. Low Quality Source Selection</h2>
-                
-                <div class="flex flex-col items-center justify-center w-full p-5 rounded-xl bg-gray-50 border border-gray-200 text-center shadow-xs">
-                    <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
-                    </svg>
-                    <p class="text-sm text-gray-700 font-semibold mb-3">Select Target Audio File</p>
-                    
-                    <!-- Native visible input with beautiful custom Google styling applied directly to the button -->
-                    <input type="file" id="audioFile" accept="audio/*" 
-                        class="text-xs text-gray-500 
-                        file:mr-3 file:py-2 file:px-4 
-                        file:rounded-lg file:border-0 
-                        file:text-xs file:font-bold 
-                        file:bg-blue-50 file:text-blue-600 
-                        hover:file:bg-blue-100 cursor-pointer w-full flex justify-center text-center" />
-                </div>
-                
-                <div id="fileInfo" class="mt-4 hidden p-3 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-600 space-y-1">
-                    <p class="text-gray-900 font-semibold truncate" id="fileName">Track: -</p>
-                    <p>Engine status: <span class="text-emerald-600 font-bold">Ready to Upsample</span></p>
-                </div>
-            </div>
-
-            <!-- Precision Metric Output Block -->
-            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Hi-Res Engine Metrics</h3>
-                <div class="space-y-2 text-xs font-medium text-gray-600">
-                    <div class="flex justify-between border-b border-gray-100 pb-1"><span>Upsampling Render Canvas</span><span class="text-gray-900 font-mono font-semibold">32-bit / 96kHz</span></div>
-                    <div class="flex justify-between border-b border-gray-100 pb-1"><span>Total Harmonic Distortion Target</span><span class="text-gray-900 font-mono font-semibold">&lt; 0.0001%</span></div>
-                    <div class="flex justify-between"><span>Phase Linearity Profile</span><span class="text-emerald-600 font-mono font-bold">99.9% Corrected</span></div>
-                </div>
-            </div>
+        <div class="segmented-control">
+          <button type="button" class="segment-btn active" id="eng-std">Standard</button>
+          <button type="button" class="segment-btn" id="eng-pro">Ultra-HD</button>
         </div>
-
-        <!-- Right/Center Column: Customization Sliders & Presets -->
-        <div class="md:col-span-2 space-y-6">
-            <div class="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-900">2. Audiophile IEM Tuning Matrix</h2>
-                        <p class="text-xs text-gray-500 font-medium">Modify dynamic frequency allocations in real-time.</p>
-                    </div>
-                    <!-- Presets Selection Map -->
-                    <select id="presetSelect" class="bg-gray-50 border border-gray-300 text-sm font-medium text-gray-800 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
-                        <option value="flat">Reference Studio Signature (Flat)</option>
-                        <option value="harman">Harman Target Curve (Highly Recommended)</option>
-                        <option value="basshead">Sub-Bass Extension Profile (Fun / Punchy)</option>
-                        <option value="analytical">Micro-Detail Exciter (Analytical Sparkle)</option>
-                    </select>
-                </div>
-
-                <!-- Customization Sliders -->
-                <div class="space-y-6">
-                    <!-- Bass Slider -->
-                    <div>
-                        <div class="flex justify-between text-xs font-semibold mb-2">
-                            <span class="text-gray-700">Sub-Bass Depth Enhancement (20Hz - 80Hz)</span>
-                            <span class="text-blue-600 font-mono font-bold" id="bassVal">0 dB</span>
-                        </div>
-                        <input type="range" id="bassSlider" min="-10" max="12" value="0" step="0.5" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                    </div>
-
-                    <!-- Clarity Slider -->
-                    <div>
-                        <div class="flex justify-between text-xs font-semibold mb-2">
-                            <span class="text-gray-700">Upper Midrange Clarity & Vocal Presence (2kHz - 5kHz)</span>
-                            <span class="text-blue-600 font-mono font-bold" id="midVal">0 dB</span>
-                        </div>
-                        <input type="range" id="midSlider" min="-10" max="10" value="0" step="0.5" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                    </div>
-
-                    <!-- Air Slider -->
-                    <div>
-                        <div class="flex justify-between text-xs font-semibold mb-2">
-                            <span class="text-gray-700">Ultra-High Harmonic Air (10kHz - 20kHz Soundstage)</span>
-                            <span class="text-blue-600 font-mono font-bold" id="airVal">0 dB</span>
-                        </div>
-                        <input type="range" id="airSlider" min="-10" max="15" value="0" step="0.5" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                    </div>
-
-                    <!-- Spatial Crossfeed Simulation -->
-                    <div>
-                        <div class="flex justify-between text-xs font-semibold mb-2">
-                            <span class="text-gray-700">Binaural IEM Crossfeed (Reduce Listening Fatigue / Expand Stage)</span>
-                            <span class="text-blue-600 font-mono font-bold" id="crossfeedVal">Off</span>
-                        </div>
-                        <input type="range" id="crossfeedSlider" min="0" max="100" value="0" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                    </div>
-                </div>
-
-                <!-- Media Action Block -->
-                <div class="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <audio id="audioElement" class="hidden"></audio>
-                    <button id="playBtn" disabled class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm transition shadow-md shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
-                        <span>Process & Play Live HD</span>
-                    </button>
-                    <button id="downloadBtn" disabled class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm border border-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed">
-                        Export Ultra-HQ WAV File
-                    </button>
-                </div>
-            </div>
+      </div>
+      
+      <div class="toggle-row">
+        <div class="toggle-text">
+          <h4>Studio Gain Boost</h4>
+          <p>Compensate low-volume master tracks</p>
         </div>
-    </main>
+        <label class="switch">
+          <input type="checkbox" id="gain-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
 
-    <!-- ========================================== -->
-    <!--     IEM TARGET DATABASE (SEO GOLDMINE)     -->
-    <!-- ========================================== -->
-    <section id="database" class="max-w-5xl w-full mx-auto px-6 py-12 border-t border-gray-200">
-        <div class="mb-6">
-            <h2 class="text-xl font-bold text-gray-900">Interactive Specific IEM Tuning Database</h2>
-            <p class="text-xs text-gray-500 mt-1 font-medium">Select your exact dynamic or planar driver hardware model to instantly patch known tuning issues and match optimized frequency targets.</p>
-        </div>
+    <button type="button" class="action-btn" id="process-btn">Optimize File</button>
+    <div class="status-panel" id="status-message">Engine Pipeline Status: Operational</div>
+  </div>
 
-        <!-- Realtime Searchable Database Layout -->
-        <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <!-- IEM Card 1 -->
-            <div onclick="applyIEMPreset(5.0, 1.5, 4.0)" class="bg-white hover:bg-gray-50 border border-gray-200 hover:border-blue-500 p-4 rounded-xl cursor-pointer transition shadow-xs flex flex-col justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-gray-900">Tangzu Wan'er Optimization</h3>
-                    <p class="text-xs text-gray-500 mt-1 font-medium">Corrects sub-bass shelf roll-off and elevates upper-mid treble energy.</p>
-                </div>
-                <span class="text-[10px] text-blue-600 font-mono font-bold mt-3 inline-block uppercase">Apply Target Profile →</span>
-            </div>
+  <script>
+    // Pure instant setup logic
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+    
+    let targetFile = null;
+    let processMode = 'std';
 
-            <!-- IEM Card 2 -->
-            <div onclick="applyIEMPreset(-1.0, 3.5, 6.0)" class="bg-white hover:bg-gray-50 border border-gray-200 hover:border-blue-500 p-4 rounded-xl cursor-pointer transition shadow-xs flex flex-col justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-gray-900">7Hz Crinacle Zero:2 Tune</h3>
-                    <p class="text-xs text-gray-500 mt-1 font-medium">Cleanses mid-bass bleeding into vocals and optimizes soundstage air.</p>
-                </div>
-                <span class="text-[10px] text-blue-600 font-mono font-bold mt-3 inline-block uppercase">Apply Target Profile →</span>
-            </div>
+    const audioInput = document.getElementById('audio-input');
+    const uploadTxt = document.getElementById('upload-txt');
+    const fileDetails = document.getElementById('file-details');
+    const processBtn = document.getElementById('process-btn');
+    const statusMessage = document.getElementById('status-message');
+    const profileSelect = document.getElementById('profile-select');
+    const gainToggle = document.getElementById('gain-toggle');
+    const engStd = document.getElementById('eng-std');
+    const engPro = document.getElementById('eng-pro');
 
-            <!-- IEM Card 3 -->
-            <div onclick="applyIEMPreset(3.5, 2.0, 1.5)" class="bg-white hover:bg-gray-50 border border-gray-200 hover:border-blue-500 p-4 rounded-xl cursor-pointer transition shadow-xs flex flex-col justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-gray-900">Moondrop Aria / Starfield</h3>
-                    <p class="text-xs text-gray-500 mt-1 font-medium">Aligns directly to the strict reference Harman Target Curve parameters.</p>
-                </div>
-                <span class="text-[10px] text-blue-600 font-mono font-bold mt-3 inline-block uppercase">Apply Target Profile →</span>
-            </div>
+    engStd.addEventListener('click', () => {
+      processMode = 'std';
+      engStd.classList.add('active');
+      engPro.classList.remove('active');
+    });
 
-            <!-- IEM Card 4 -->
-            <div onclick="applyIEMPreset(-3.0, -1.5, 8.0)" class="bg-white hover:bg-gray-50 border border-gray-200 hover:border-blue-500 p-4 rounded-xl cursor-pointer transition shadow-xs flex flex-col justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-gray-900">KZ ZSN Pro X Fatigue Fix</h3>
-                    <p class="text-xs text-gray-500 mt-1 font-medium">Slashes piercing, sharp, harsh sibilance at the 4kHz-7kHz treble points.</p>
-                </div>
-                <span class="text-[10px] text-blue-600 font-mono font-bold mt-3 inline-block uppercase">Apply Target Profile →</span>
-            </div>
-        </div>
-    </section>
+    engPro.addEventListener('click', () => {
+      processMode = 'pro';
+      engPro.classList.add('active');
+      engStd.classList.remove('active');
+    });
 
-    <!-- Footer Area -->
-    <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-500 bg-white">
-        <p class="mb-2 font-medium">Powered by AuraAudio DSP Master Engine 4.0. Precision-optimized for in-ear monitors.</p>
-        <p class="text-[10px] text-gray-400">Disclaimer: This tool applies high-accuracy web DSP structures to approximate premium hi-res performance playback files.</p>
-    </footer>
+    audioInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        targetFile = e.target.files[0];
+        uploadTxt.innerText = "Change Selected Track";
+        fileDetails.innerText = `Track: ${targetFile.name}`;
+        fileDetails.style.display = "block";
+        statusMessage.innerText = "Audio loaded. Pipeline sequence configured.";
+      }
+    });
 
-    <!-- ========================================== -->
-    <!--       CORE AUDIO DSP ENGINE JAVASCRIPT     -->
-    <!-- ========================================== -->
-    <script>
-        let audioCtx;
-        let track;
-        let bassFilter, midFilter, airFilter;
-        
-        const audioFile = document.getElementById('audioFile');
-        const audioElement = document.getElementById('audioElement');
-        const playBtn = document.getElementById('playBtn');
-        const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.getElementById('fileName');
-
-        // Sliders Struct Mapping UI
-        const sliders = {
-            bass: { el: document.getElementById('bassSlider'), val: document.getElementById('bassVal'), suffix: ' dB' },
-            mid: { el: document.getElementById('midSlider'), val: document.getElementById('midVal'), suffix: ' dB' },
-            air: { el: document.getElementById('airSlider'), val: document.getElementById('airVal'), suffix: ' dB' },
-            cross: { el: document.getElementById('crossfeedSlider'), val: document.getElementById('crossfeedVal'), suffix: '%' }
-        };
-
-        // Track Input File Event Hook
-        audioFile.addEventListener('change', function() {
-            if(this.files && this.files[0]) {
-                const fileURL = URL.createObjectURL(this.files[0]);
-                audioElement.src = fileURL;
-                fileName.innerText = `Track: ${this.files[0].name}`;
-                fileInfo.classList.remove('hidden');
-                playBtn.disabled = false;
-            }
-        });
-
-        // Initialize Low-Level Web Audio Context Pipeline
-        function initAudioPipeline() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)({
-                latencyHint: 'playback',
-                sampleRate: 96000 // Instruct upsampling render environment
-            });
-            
-            track = audioCtx.createMediaElementSource(audioElement);
-
-            // Sub-bass shelf hardware emulation node
-            bassFilter = audioCtx.createBiquadFilter();
-            bassFilter.type = 'lowshelf';
-            bassFilter.frequency.value = 80;
-
-            // Upper Mids presence filter peaking node
-            midFilter = audioCtx.createBiquadFilter();
-            midFilter.type = 'peaking';
-            midFilter.frequency.value = 3500;
-            midFilter.Q.value = 1.2;
-
-            // Ultra-high harmonic air high shelf expansion node
-            airFilter = audioCtx.createBiquadFilter();
-            airFilter.type = 'highshelf';
-            airFilter.frequency.value = 11000;
-
-            // Direct Processing Chain Audio Routing Map
-            track.connect(bassFilter);
-            bassFilter.connect(midFilter);
-            midFilter.connect(airFilter);
-            airFilter.connect(audioCtx.destination);
+    processBtn.addEventListener('click', async () => {
+      if (!targetFile) { 
+        statusMessage.innerText = "⚠️ Please select an audio file first."; 
+        return; 
+      }
+      try {
+        statusMessage.innerText = "⏳ Initializing engine core setup..."; 
+        if (!ffmpeg.isLoaded()) {
+          await ffmpeg.load();
         }
-
-        // Processing Playback Controls Execution
-        playBtn.addEventListener('click', function() {
-            if (!audioCtx) {
-                initAudioPipeline();
-            }
-
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            if (audioElement.paused) {
-                audioElement.play();
-                this.innerHTML = `<span>Pause HD Stream</span>`;
-                this.classList.replace('from-blue-600', 'from-amber-600');
-                this.classList.replace('to-indigo-600', 'to-amber-500');
-            } else {
-                audioElement.pause();
-                this.innerHTML = `<span>Process & Play Live HD</span>`;
-                this.classList.replace('from-amber-600', 'from-blue-600');
-                this.classList.replace('to-amber-500', 'to-indigo-600');
-            }
-        });
-
-        // Event hooks linking slider UI nodes to real-time DSP logic
-        sliders.bass.el.addEventListener('input', (e) => {
-            if(bassFilter) bassFilter.gain.value = e.target.value;
-            sliders.bass.val.innerText = e.target.value + sliders.bass.suffix;
-        });
-        sliders.mid.el.add
+        
+        statusMessage.innerText = "⚡ Preparing audio buffers...";
+        ffmpeg.FS('writeFile', 'input_track', await fetchFile(targetFile));
+        
+        const target = profileSelect.value; 
+        let commandArgs = ['-i', 'input_track'];
+        
+        if (gainToggle.checked) { 
+          commandArgs.push('-filter:a', 'volume=1.5'); 
+        }
+        
+        let outName = "PureAudio_Output.flac";
+        let outFormat = "output.flac";
+        
+        if (target === "flac_24") { 
+          commandArgs.push('-c:a', 'flac', '-sample_fmt', 's32', '-ar', '48000', 'output.flac'); 
+          outName = "PureAudio_Master_24b.flac"; 
+          outFormat = "output.flac";
+        } else if (target === "flac_16") { 
+          commandArgs.push('-c:a', 'flac', '-sample_fmt', 's16', '-ar', '44100', 'output.flac'); 
+          outName = "PureAudio_CD_16b.flac";
+          outFormat = "output.flac"; 
+        } else if (target === "wav_16") { 
+          commandArgs.push('-c:a', 'pcm_s16le', '-ar', '44100', 'output.wav'); 
+          outName = "PureAudio_Studio.wav"; 
+          outFormat = "output.wav";
+        }
+        
+        statusMessage.innerText = "⚡ Transcoding studio matrices... Please wait.";
+        await ffmpeg.run(...commandArgs);
+        
+        statusMessage.innerText = "✅ Exporting high-res file streams...";
+        const data = ffmpeg.FS('readFile', outFormat);
+        
+        const blob = new Blob([data.buffer], { type: 'audio/' + (target.includes('flac') ? 'flac' : 'wav') });
+        const url = URL.createObjectURL(blob); 
+        
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = outName; 
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
+        
+        statusMessage.innerText = "🎉 Complete! File exported to your Downloads folder.";
+      } catch (err) { 
+        console.error(err); 
+        statusMessage.innerText = "❌ Core script framework error. Try again."; 
+      }
+    });
+  </script>
+</body>
+</html>
