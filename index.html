@@ -57,23 +57,27 @@
         
         <!-- Left Column: Upload & Core Audio Stats -->
         <div class="md:col-span-1 space-y-6">
-            <!-- 1. Low Quality Source Selection (FIXED INPUT) -->
+            <!-- 1. Low Quality Source Selection (BULLETPROOF NATIVE VERSION) -->
             <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                 <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">1. Low Quality Source Selection</h2>
                 
-                <!-- Fixed interactive wrapper container -->
-                <div onclick="document.getElementById('audioFile').click()" class="group flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-xl cursor-pointer bg-gray-50 hover:bg-blue-50/30 transition p-4 text-center">
-                    <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                        <svg class="w-8 h-8 text-gray-400 group-hover:text-blue-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
-                        <p class="text-sm text-gray-700 font-semibold group-hover:text-blue-600 transition">Import Target Audio</p>
-                        <p class="text-xs text-gray-400">Supports standard MP3, WAV, FLAC, M4A</p>
-                    </div>
+                <div class="flex flex-col items-center justify-center w-full p-5 rounded-xl bg-gray-50 border border-gray-200 text-center shadow-xs">
+                    <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                    <p class="text-sm text-gray-700 font-semibold mb-3">Select Target Audio File</p>
+                    
+                    <!-- Native visible input with beautiful custom Google styling applied directly to the button -->
+                    <input type="file" id="audioFile" accept="audio/*" 
+                        class="text-xs text-gray-500 
+                        file:mr-3 file:py-2 file:px-4 
+                        file:rounded-lg file:border-0 
+                        file:text-xs file:font-bold 
+                        file:bg-blue-50 file:text-blue-600 
+                        hover:file:bg-blue-100 cursor-pointer w-full flex justify-center text-center" />
                 </div>
                 
-                <!-- Safely isolated file handler input -->
-                <input type="file" id="audioFile" class="hidden" accept="audio/*" />
-                
-                <div id="fileInfo" class="mt-4 hidden p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600 space-y-1">
+                <div id="fileInfo" class="mt-4 hidden p-3 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-600 space-y-1">
                     <p class="text-gray-900 font-semibold truncate" id="fileName">Track: -</p>
                     <p>Engine status: <span class="text-emerald-600 font-bold">Ready to Upsample</span></p>
                 </div>
@@ -166,7 +170,7 @@
     <section id="database" class="max-w-5xl w-full mx-auto px-6 py-12 border-t border-gray-200">
         <div class="mb-6">
             <h2 class="text-xl font-bold text-gray-900">Interactive Specific IEM Tuning Database</h2>
-            <p class="text-xs text-gray-500 font-medium mt-1">Select your exact dynamic or planar driver hardware model to instantly patch known tuning issues and match optimized frequency targets.</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Select your exact dynamic or planar driver hardware model to instantly patch known tuning issues and match optimized frequency targets.</p>
         </div>
 
         <!-- Realtime Searchable Database Layout -->
@@ -237,9 +241,9 @@
             cross: { el: document.getElementById('crossfeedSlider'), val: document.getElementById('crossfeedVal'), suffix: '%' }
         };
 
-        // Track Input File Event Hook (Updated to work with our new click container layout)
+        // Track Input File Event Hook
         audioFile.addEventListener('change', function() {
-            if(this.files[0]) {
+            if(this.files && this.files[0]) {
                 const fileURL = URL.createObjectURL(this.files[0]);
                 audioElement.src = fileURL;
                 fileName.innerText = `Track: ${this.files[0].name}`;
@@ -306,4 +310,6 @@
         // Event hooks linking slider UI nodes to real-time DSP logic
         sliders.bass.el.addEventListener('input', (e) => {
             if(bassFilter) bassFilter.gain.value = e.target.value;
-            sliders.bass.val.innerText = e.target.value + sliders.bass
+            sliders.bass.val.innerText = e.target.value + sliders.bass.suffix;
+        });
+        sliders.mid.el.add
