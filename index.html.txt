@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PureAudio - Hi-Res Lossless IEM Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.15/umd/ffmpeg.min.js"></script>
+    <style>
+        :root { --bg: #0d0e12; --card: #161820; --accent: #00ffcc; --text: #ffffff; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: var(--card); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; border: 1px solid #252938; }
+        h1 { color: var(--accent); margin-bottom: 5px; font-size: 24px; }
+        p { color: #8b949e; font-size: 13px; margin-bottom: 25px; }
+        .upload-box { background: #1f222e; border: 2px dashed #3b4252; padding: 25px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; }
+        select, button { width: 100%; padding: 12px; background: #1f222e; border: 1px solid #3b4252; color: white; border-radius: 8px; margin-bottom: 15px; font-size: 15px; }
+        button { background: var(--accent); color: #000; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { opacity: 0.9; box-shadow: 0 0 15px rgba(0,255,204,0.3); }
+        #status { color: var(--accent); font-size: 14px; margin-top: 10px; }
+        .ad-box { margin-top: 25px; padding: 15px; background: #1f222e; border-radius: 8px; color: #4c566a; font-size: 11px; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>PureAudio Studio</h1>
+    <p>Lossless Browser Transcoder for IEM Hardware</p>
+    
+    <div class="upload-box">
+        <input type="file" id="audioInput" accept="audio/*" style="display:none;">
+        <label for="audioInput" style="cursor: pointer; display: block;" id="fileLabel">
+            🎵 Click to Upload Audio File
+        </label>
+    </div>
+
+    <select id="profileSelect">
+        <option value="flac_16">FLAC - 16-bit / 44.1kHz (CD Quality Lossless)</option>
+        <option value="flac_24">FLAC - 24-bit / 96kHz (Hi-Res Studio Master)</option>
+        <option value="wav_16">WAV - 16-bit / 44.1kHz (Uncompressed Lossless)</option>
+    </select>
+
+    <button id="convertBtn">OPTIMIZE FOR IEM</button>
+    <div id="status">Engine Ready</div>
+
+    <div class="ad-box">ADVERTISEMENT RESPONSIVE SLOT</div>
+</div>
+
+<script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    const audioInput = document.getElementById('audioInput');
+    const fileLabel = document.getElementById('fileLabel');
+    const convertBtn = document.getElementById('convertBtn');
+    const status = document.getElementById('status');
+    const profileSelect = document.getElementById('profileSelect');
+
+    audioInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            fileLabel.innerHTML = `📝 Selected: <b>${e.target.files[0].name}</b>`;
+        }
+    });
+
+    convertBtn.addEventListener('click', async () => {
+        const file = audioInput.files[0];
+        if (!file) { status.innerText = "⚠️ Select an audio file first!"; return; }
+
+        status.innerText = "⚡ Loading Audio Engine...";
+        if (!ffmpeg.isLoaded()) { await ffmpeg.load(); }
+
+        status.innerText = "⚡ Converting lossless audio formats...";
+        ffmpeg.FS('writeFile', 'input', await fetchFile(file));
+
+        const target = profileSelect.value;
+        let args = []; let out = "";
+
+        if (target === "flac_16") { args = ['-i', 'input', '-c:a', 'flac', '-sample_fmt', 's16', '-ar', '44100', 'out.flac']; out = "out.flac"; }
+        else if (target === "flac_24") { args = ['-i', 'input', '-c:a', 'flac', '-sample_fmt', 's32', '-ar', '96000', 'out.flac']; out = "out.flac"; }
+        else if (target === "wav_16") { args = ['-i', 'input', '-c:a', 'pcm_s16le', '-ar', '44100', 'out.wav']; out = "out.wav"; }
+
+        await ffmpeg.run(...args);
+        status.innerText = "✅ Done! Exporting file...";
+
+        const data = ffmpeg.FS('readFile', out);
+        const blob = new Blob([data.buffer], { type: 'audio/' + out.split('.')[1] });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url; a.download = "PureAudio_" + file.name.split('.')[0] + '.' + out.split('.')[1];
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        status.innerText = "🎉 Process Finished Successfully!";
+    });
+</script>
+
+</body>
+</html>
