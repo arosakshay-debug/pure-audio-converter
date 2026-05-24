@@ -8,7 +8,8 @@
   <meta name="description" content="PureAudio is a free premium online audio converter optimized for IEM users. Convert your tracks to studio master 24-bit FLAC or uncompressed WAV directly on your mobile device instantly.">
   <meta name="keywords" content="audio converter, flac converter, wav converter, high-res audio, IEM optimizer, 24-bit audio, lossless audio, music booster">
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.15/umd/ffmpeg.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.11.6/umd/ffmpeg.min.js"></script>
+  
   <style>
     :root {
       --bg: #f8f9fa;
@@ -25,27 +26,26 @@
     .container { background-color: var(--card); width: 100%; max-width: 440px; border-radius: 28px; padding: 32px 24px; border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
     h1 { font-size: 24px; text-align: center; margin-bottom: 4px; color: var(--text); font-weight: 600; }
     .subtitle { font-size: 13px; text-align: center; color: var(--sub); margin-bottom: 24px; letter-spacing: 0.3px; }
-    .upload-box { border: 2px dashed var(--border); border-radius: 16px; padding: 28px 16px; background-color: #fdfefe; cursor: pointer; margin-bottom: 20px; text-align: center; transition: background 0.2s; }
+    
+    /* Make the click target robust and completely clickable */
+    .upload-box { border: 2px dashed var(--border); border-radius: 16px; padding: 28px 16px; background-color: #fdfefe; cursor: pointer; margin-bottom: 20px; text-align: center; position: relative; display: block; }
     .upload-box:active { background-color: #f1f3f4; }
-    .upload-label { font-size: 14px; font-weight: bold; color: var(--primary); pointer-events: none; }
-    .file-info { margin-top: 8px; font-size: 13px; color: var(--success); display: none; font-weight: 500; pointer-events: none; }
+    .upload-label { font-size: 14px; font-weight: bold; color: var(--primary); }
+    .file-info { margin-top: 8px; font-size: 13px; color: var(--success); display: none; font-weight: 500; }
     
     .label-title { font-size: 12px; font-weight: bold; color: var(--sub); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .custom-select { width: 100%; padding: 14px; font-size: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; outline: none; background-color: #fff; }
+    .custom-select { width: 100%; padding: 14px; font-size: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; outline: none; background-color: #fff; color: var(--text); }
     
-    /* Extra Premium Feature Options Zone */
     .extra-options-group { background-color: #f1f3f4; padding: 16px; border-radius: 16px; margin-bottom: 24px; }
     .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .toggle-row:last-child { margin-bottom: 0; }
     .toggle-text h4 { font-size: 14px; color: var(--text); font-weight: 600; }
     .toggle-text p { font-size: 11px; color: var(--sub); }
     
-    /* Premium Segmented Button Control */
     .segmented-control { display: flex; background: #e3e6e8; padding: 2px; border-radius: 8px; }
     .segment-btn { border: none; background: transparent; padding: 6px 12px; font-size: 12px; font-weight: bold; color: var(--sub); cursor: pointer; border-radius: 6px; outline: none; }
     .segment-btn.active { background: var(--card); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
     
-    /* Material Switch Graphic */
     .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #b0b5b9; transition: .3s; border-radius: 24px; }
@@ -53,8 +53,8 @@
     input:checked + .slider { background-color: var(--primary); }
     input:checked + .slider:before { transform: translateX(20px); }
 
-    .action-btn { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 15px; font-size: 15px; font-weight: bold; border-radius: 100px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: transform 0.1s; }
-    .action-btn:active { transform: scale(0.98); background-color: #1557b0; }
+    .action-btn { width: 100%; background-color: var(--primary); color: #ffffff; border: none; padding: 15px; font-size: 15px; font-weight: bold; border-radius: 100px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .action-btn:active { background-color: #1557b0; }
     .status-panel { margin-top: 20px; padding: 12px; border-radius: 12px; background-color: #e8f0fe; font-size: 13px; color: var(--primary); text-align: center; font-weight: 500; }
   </style>
 </head>
@@ -65,7 +65,7 @@
     
     <input type="file" id="audio-input" accept="audio/*" style="display: none;">
     
-    <div class="upload-box" id="drop-zone">
+    <div class="upload-box" id="drop-zone" onclick="document.getElementById('audio-input').click()">
       <span class="upload-label" id="upload-txt">Select Audio Track</span>
       <div class="file-info" id="file-details"></div>
     </div>
@@ -107,105 +107,106 @@
   </div>
 
   <script>
-    // Make sure we wait for the browser to build elements
-    document.addEventListener("DOMContentLoaded", () => {
-      const ffmpeg = new FFmpeg();
-      let targetFile = null;
-      let processMode = 'std';
+    // Pure instant setup logic
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+    
+    let targetFile = null;
+    let processMode = 'std';
 
-      const dropZone = document.getElementById('drop-zone');
-      const audioInput = document.getElementById('audio-input');
-      const uploadTxt = document.getElementById('upload-txt');
-      const fileDetails = document.getElementById('file-details');
-      const processBtn = document.getElementById('process-btn');
-      const statusMessage = document.getElementById('status-message');
-      const profileSelect = document.getElementById('profile-select');
-      const gainToggle = document.getElementById('gain-toggle');
-      const engStd = document.getElementById('eng-std');
-      const engPro = document.getElementById('eng-pro');
+    const audioInput = document.getElementById('audio-input');
+    const uploadTxt = document.getElementById('upload-txt');
+    const fileDetails = document.getElementById('file-details');
+    const processBtn = document.getElementById('process-btn');
+    const statusMessage = document.getElementById('status-message');
+    const profileSelect = document.getElementById('profile-select');
+    const gainToggle = document.getElementById('gain-toggle');
+    const engStd = document.getElementById('eng-std');
+    const engPro = document.getElementById('eng-pro');
 
-      // Toggles for the Engine Mode buttons
-      engStd.addEventListener('click', () => {
-        processMode = 'std';
-        engStd.classList.add('active');
-        engPro.classList.remove('active');
-      });
+    engStd.addEventListener('click', () => {
+      processMode = 'std';
+      engStd.classList.add('active');
+      engPro.classList.remove('active');
+    });
 
-      engPro.addEventListener('click', () => {
-        processMode = 'pro';
-        engPro.classList.add('active');
-        engStd.classList.remove('active');
-      });
+    engPro.addEventListener('click', () => {
+      processMode = 'pro';
+      engPro.classList.add('active');
+      engStd.classList.remove('active');
+    });
 
-      // Forces the file window to pop up open when container clicked
-      dropZone.addEventListener('click', () => {
-        audioInput.click();
-      });
+    audioInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        targetFile = e.target.files[0];
+        uploadTxt.innerText = "Change Selected Track";
+        fileDetails.innerText = `Track: ${targetFile.name}`;
+        fileDetails.style.display = "block";
+        statusMessage.innerText = "Audio loaded. Pipeline sequence configured.";
+      }
+    });
 
-      audioInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-          targetFile = e.target.files[0];
-          uploadTxt.innerText = "Change Selected Track";
-          fileDetails.innerText = `Track: ${targetFile.name}`;
-          fileDetails.style.display = "block";
-          statusMessage.innerText = "Audio loaded. Pipeline sequence configured.";
+    processBtn.addEventListener('click', async () => {
+      if (!targetFile) { 
+        statusMessage.innerText = "⚠️ Please select an audio file first."; 
+        return; 
+      }
+      try {
+        statusMessage.innerText = "⏳ Initializing engine core setup..."; 
+        if (!ffmpeg.isLoaded()) {
+          await ffmpeg.load();
         }
-      });
-
-      processBtn.addEventListener('click', async () => {
-        if (!targetFile) { 
-          statusMessage.innerText = "⚠️ Please connect an audio target track first."; 
-          return; 
+        
+        statusMessage.innerText = "⚡ Preparing audio buffers...";
+        ffmpeg.FS('writeFile', 'input_track', await fetchFile(targetFile));
+        
+        const target = profileSelect.value; 
+        let commandArgs = ['-i', 'input_track'];
+        
+        if (gainToggle.checked) { 
+          commandArgs.push('-filter:a', 'volume=1.5'); 
         }
-        try {
-          statusMessage.innerText = "⏳ Initialization framework runtime..."; 
-          if (!ffmpeg.loaded) await ffmpeg.load();
-          
-          statusMessage.innerText = "⚡ Allocating thread resources...";
-          const fileData = await targetFile.arrayBuffer(); 
-          await ffmpeg.writeFile('input', new Uint8Array(fileData));
-          
-          const target = profileSelect.value; 
-          let args = ['-i', 'input'];
-          
-          if (gainToggle.checked) { 
-            args.push('-filter:a', 'volume=1.5'); 
-          }
-          
-          let outName = "PureAudio_Output.flac";
-          if (target === "flac_24") { 
-            args.push('-c:a', 'flac', '-sample_fmt', 's32', '-ar', '48000', 'output.flac'); 
-            outName = "PureAudio_Master_24b.flac"; 
-          } else if (target === "flac_16") { 
-            args.push('-c:a', 'flac', '-sample_fmt', 's16', '-ar', '44100', 'output.flac'); 
-            outName = "PureAudio_CD_16b.flac"; 
-          } else if (target === "wav_16") { 
-            args.push('-c:a', 'pcm_s16le', '-ar', '44100', 'output.wav'); 
-            outName = "PureAudio_Studio.wav"; 
-          }
-          
-          await ffmpeg.exec(args); 
-          statusMessage.innerText = "✅ Finalizing file export buffers...";
-          
-          const data = await ffmpeg.readFile(target.includes('wav') ? 'output.wav' : 'output.flac');
-          const blob = new Blob([data.buffer], { type: 'audio/' + (target.includes('flac') ? 'flac' : 'wav') });
-          const url = URL.createObjectURL(blob); 
-          
-          const a = document.createElement('a'); 
-          a.href = url; 
-          a.download = outName; 
-          document.body.appendChild(a); 
-          a.click(); 
-          document.body.removeChild(a);
-          
-          statusMessage.innerText = "🎉 Pipeline complete! File exported successfully.";
-        } catch (err) { 
-          console.error(err); 
-          statusMessage.innerText = "❌ Core runtime script conversion exception."; 
+        
+        let outName = "PureAudio_Output.flac";
+        let outFormat = "output.flac";
+        
+        if (target === "flac_24") { 
+          commandArgs.push('-c:a', 'flac', '-sample_fmt', 's32', '-ar', '48000', 'output.flac'); 
+          outName = "PureAudio_Master_24b.flac"; 
+          outFormat = "output.flac";
+        } else if (target === "flac_16") { 
+          commandArgs.push('-c:a', 'flac', '-sample_fmt', 's16', '-ar', '44100', 'output.flac'); 
+          outName = "PureAudio_CD_16b.flac";
+          outFormat = "output.flac"; 
+        } else if (target === "wav_16") { 
+          commandArgs.push('-c:a', 'pcm_s16le', '-ar', '44100', 'output.wav'); 
+          outName = "PureAudio_Studio.wav"; 
+          outFormat = "output.wav";
         }
-      });
+        
+        statusMessage.innerText = "⚡ Transcoding studio matrices... Please wait.";
+        await ffmpeg.run(...commandArgs);
+        
+        statusMessage.innerText = "✅ Exporting high-res file streams...";
+        const data = ffmpeg.FS('readFile', outFormat);
+        
+        const blob = new Blob([data.buffer], { type: 'audio/' + (target.includes('flac') ? 'flac' : 'wav') });
+        const url = URL.createObjectURL(blob); 
+        
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = outName; 
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
+        
+        statusMessage.innerText = "🎉 Complete! File exported to your Downloads folder.";
+      } catch (err) { 
+        console.error(err); 
+        statusMessage.innerText = "❌ Core script framework error. Try again."; 
+      }
     });
   </script>
 </body>
-    </html>
-    
+        </html>
+  
